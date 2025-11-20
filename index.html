@@ -1,38 +1,840 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Our Love Story</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Girl Who Stole My RAM - Final Masterpiece</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700&family=Pacifico&family=Quicksand:wght@500&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        /* Custom font for a romantic feel */
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Poppins:wght@300;400;600&display=swap');
-        body {
-            font-family: 'Poppins', sans-serif;
-            cursor: none; /* Hide default cursor */
+        :root {
+            --primary: #ff7eb3;
+            --secondary: #ff758c;
+            --accent: #7afcff;
+            --bg-dark: #0f0518;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-glow: 0 0 10px rgba(255, 126, 179, 0.8);
+            --box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
-        .font-dancing {
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Quicksand', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            cursor: none; /* Ẩn chuột mặc định để dùng custom cursor */
+        }
+
+        /* --- CUSTOM CURSOR --- */
+        #cursor-dot, #cursor-dot-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        #cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        #cursor-dot-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--primary);
+            transition: width 0.2s, height 0.2s;
+        }
+
+        /* --- BACKGROUND --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* --- UI UTILITIES --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: var(--box-shadow);
+            padding: 3rem;
+            text-align: center;
+            animation: floatPanel 6s ease-in-out infinite;
+        }
+
+        @keyframes floatPanel {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .title-font { font-family: 'Dancing Script', cursive; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            cursor: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 15px rgba(255, 117, 140, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 117, 140, 0.6);
+        }
+        .btn-primary:hover::after { left: 100%; }
+        .btn-primary:active { transform: scale(0.95); }
+
+        /* --- STAGES --- */
+        .stage {
+            position: absolute;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+            z-index: 10;
+        }
+        .stage.active { opacity: 1; visibility: visible; }
+
+        /* STAGE 1: LOGIN */
+        .login-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--secondary);
+            padding: 15px 25px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.2rem;
+            width: 100%;
+            max-width: 300px;
+            margin: 25px 0;
+            text-align: center;
+            outline: none;
+            font-family: 'Quicksand', sans-serif;
+            transition: 0.3s;
+        }
+        .login-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(122, 252, 255, 0.3);
+        }
+
+        /* STAGE 2: THE TRAP */
+        .love-msg {
+            font-size: 4.5rem;
+            color: var(--primary);
+            text-shadow: var(--text-glow);
+            margin-bottom: 3rem;
+            animation: heartbeat 1.5s infinite;
+            position: relative;
+            z-index: 10;
+        }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            15% { transform: scale(1.1); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.1); }
+        }
+
+        .btn-group {
+            position: relative; 
+            width: 100%; 
+            height: 200px; /* Đủ không gian cho nút chạy */
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+        }
+
+        /* STAGE 4: GALLERY */
+        .gallery-container {
+            perspective: 1200px;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .carousel {
+            position: relative;
+            width: 320px; height: 450px;
+            transform-style: preserve-3d;
+        }
+        .card {
+            position: absolute;
+            width: 300px; height: 420px;
+            left: 10px; top: 15px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px 15px 60px 15px;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            backface-visibility: hidden;
+            display: flex; flex-direction: column; align-items: center;
+            -webkit-box-reflect: below 10px linear-gradient(transparent, transparent, rgba(255,255,255,0.2));
+        }
+        .card img {
+            width: 100%; height: 280px;
+            object-fit: cover;
+            background: #eee;
+        }
+        .card p {
+            margin-top: 15px;
+            color: #333;
             font-family: 'Dancing Script', cursive;
+            font-size: 1.8rem;
+        }
+
+        /* STAGE 5: CAKE */
+        .cake-base {
+            position: relative;
+            width: 250px; height: 200px;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+        }
+        .layer {
+            width: 100%;
+            background: linear-gradient(to right, #ff9a9e, #fecfef);
+            border-radius: 10px;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .layer-bottom { height: 80px; width: 240px; z-index: 1; }
+        .layer-top { height: 70px; width: 170px; z-index: 2; margin-bottom: -10px; }
+        
+        .icing {
+            position: absolute; top: 0; left: 0; width: 100%; height: 20px;
+            background: #fff;
+            border-radius: 10px 10px 5px 5px;
+            background-image: radial-gradient(circle at 10px 10px, #fff 10px, transparent 11px);
+            background-size: 20px 20px;
+            background-repeat: repeat-x;
+        }
+
+        .candle {
+            width: 12px; height: 50px;
+            background: repeating-linear-gradient(45deg, #fff, #fff 5px, var(--accent) 5px, var(--accent) 10px);
+            position: absolute; top: -45px; z-index: 3;
+            border-radius: 4px;
+        }
+        .flame {
+            width: 16px; height: 28px;
+            background: #ff9d00;
+            border-radius: 50% 50% 20% 20%;
+            position: absolute; top: -28px; left: -2px;
+            box-shadow: 0 0 10px #ff9d00, 0 0 20px #ff0000;
+            animation: flicker 0.1s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { transform: scale(1) rotate(-2deg); opacity: 1; }
+            100% { transform: scale(1.1) rotate(2deg); opacity: 0.8; }
+        }
+
+        /* MUSIC CONTROL */
+        .music-control {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex; justify-content: center; align-items: center;
+            cursor: none;
+            z-index: 100;
+            transition: 0.3s;
+            color: white;
+        }
+        .music-control:hover { background: var(--primary); transform: scale(1.1); }
+        .music-control.playing { animation: spin 3s linear infinite; border-color: var(--primary); color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .love-msg { font-size: 3rem; }
+            .glass-panel { padding: 1.5rem; width: 90%; }
+            .card { width: 260px; height: 360px; }
+            .carousel { width: 280px; height: 380px; }
+            .btn-group { flex-direction: column; height: 300px; justify-content: space-evenly; }
         }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.5",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1",
-    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.5.1"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+
+    <!-- Custom Cursor -->
+    <div id="cursor-dot"></div>
+    <div id="cursor-dot-outline"></div>
+
+    <!-- 3D Background -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Audio System -->
+    <audio id="bg-music" loop></audio>
+    <div class="music-control" onclick="toggleMusic()">
+        <i class="fas fa-music"></i>
+    </div>
+
+    <!-- STAGE 1: LOGIN -->
+    <div id="stage-1" class="stage active">
+        <div class="glass-panel">
+            <h1 class="title-font" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 10px;">Hello Công Chúa</h1>
+            <p style="font-size: 1.1rem; opacity: 0.9;">Cánh cửa dẫn đến trái tim anh đang bị khóa...</p>
+            
+            <input type="password" id="pass-input" class="login-input" placeholder="Nhập mật khẩu (toibikhung)">
+            <br>
+            <button class="btn-primary" onclick="checkPass()">Mở Khóa 💖</button>
+        </div>
+    </div>
+
+    <!-- STAGE 2: THE TRAP -->
+    <div id="stage-2" class="stage">
+        <h1 class="title-font love-msg">Em có yêu anh không?</h1>
+        <div class="btn-group">
+            <!-- Nút Có: Cố định -->
+            <button class="btn-primary btn-yes" style="z-index: 2;" onclick="passTrap()">
+                Có, yêu lắm cơ! 🥰
+            </button>
+            <!-- Nút Không: Sẽ chạy -->
+            <button id="btn-no" class="btn-primary" style="background: #555; transition: top 0.2s, left 0.2s;">
+                Không thèm
+            </button>
+        </div>
+    </div>
+
+    <!-- STAGE 3: CINEMATIC INTRO -->
+    <div id="stage-3" class="stage">
+        <!-- Text injected via JS -->
+    </div>
+
+    <!-- STAGE 4: GALLERY -->
+    <div id="stage-4" class="stage">
+        <div class="gallery-container">
+            <div class="carousel" id="carousel">
+                <!-- Cards injected via JS -->
+            </div>
+        </div>
+        <div style="position: fixed; bottom: 30px; text-align: center; width: 100%; color: rgba(255,255,255,0.6); pointer-events: none;">
+            <i class="fas fa-hand-pointer"></i> Kéo thả hoặc cuộn chuột để xem kỷ niệm
+        </div>
+        <button id="btn-next-stage" class="btn-primary" style="position: fixed; bottom: 80px; opacity: 0; visibility: hidden;" onclick="toBirthday()">
+            Đi tới tiệc sinh nhật 🎂
+        </button>
+    </div>
+
+    <!-- STAGE 5: BIRTHDAY -->
+    <div id="stage-5" class="stage">
+        <div class="glass-panel" style="max-width: 600px;">
+            <h1 id="bday-text" class="title-font" style="font-size: 2.5rem; color: var(--primary); min-height: 80px;"></h1>
+            
+            <div class="cake-base" style="margin: 30px auto;">
+                <div class="layer layer-top">
+                    <div class="icing"></div>
+                    <div class="candle" id="candle">
+                        <div class="flame" id="flame"></div>
+                    </div>
+                </div>
+                <div class="layer layer-bottom">
+                    <div class="icing"></div>
+                </div>
+            </div>
+
+            <div style="width: 100%; background: #444; height: 8px; border-radius: 4px; margin: 20px 0; overflow: hidden;">
+                <div id="breath-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.1s;"></div>
+            </div>
+            <p style="margin-bottom: 15px; font-size: 0.9rem;">Nhấn giữ nút bên dưới để thổi nến!</p>
+            <button id="btn-blow" class="btn-primary">💨 Thổi Nến</button>
+        </div>
+    </div>
+
+    <!-- STAGE 6: QUIZ -->
+    <div id="stage-6" class="stage">
+        <div class="glass-panel" style="width: 90%; max-width: 500px;">
+            <h2 class="title-font" style="color: var(--primary); margin-bottom: 20px;">Thử thách tình yêu</h2>
+            <div id="quiz-box"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO SYSTEM (THE IMMORTAL) ---
+        // Danh sách các link nhạc dự phòng (Fallbacks)
+        const playlist = [
+            "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-piano-115553.mp3", // Link Cũ (Romantic Wedding) - Ưu tiên số 1
+            "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b9767f6b.mp3", // Link Piano Moment (Backup 1)
+            "https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3" // Link Romantic Piano (Backup 2)
+        ];
+        let currentSongIdx = 0;
+        const audio = document.getElementById('bg-music');
+
+        function loadMusic() {
+            audio.src = playlist[currentSongIdx];
+            audio.load();
+        }
+        
+        // Tự động chuyển link nếu lỗi
+        audio.onerror = function() {
+            console.log("Link nhạc lỗi, đang chuyển link khác...");
+            currentSongIdx = (currentSongIdx + 1) % playlist.length;
+            loadMusic();
+        };
+
+        // Khởi tạo
+        loadMusic();
+
+        // --- AUDIO CONTEXT SFX ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if (type === 'hover') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'click') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'win') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(500, now); osc.frequency.setValueAtTime(800, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mouseenter', () => playSound('hover'));
+            btn.addEventListener('click', () => playSound('click'));
+        });
+
+        // --- CUSTOM CURSOR ---
+        const cursorDot = document.getElementById("cursor-dot");
+        const cursorOutline = document.getElementById("cursor-dot-outline");
+
+        window.addEventListener("mousemove", (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+            cursorOutline.animate({ left: `${posX}px`, top: `${posY}px` }, { duration: 500, fill: "forwards" });
+            if (Math.random() > 0.8) createSparkle(posX, posY);
+        });
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.style.position = 'fixed';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.width = Math.random() * 4 + 'px';
+            sparkle.style.height = sparkle.style.width;
+            sparkle.style.background = `hsl(${Math.random() * 360}, 100%, 80%)`;
+            sparkle.style.borderRadius = '50%';
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.zIndex = '9998';
+            document.body.appendChild(sparkle);
+            const destX = (Math.random() - 0.5) * 50;
+            const destY = (Math.random() - 0.5) * 50;
+            sparkle.animate([{ transform: 'translate(0, 0) scale(1)', opacity: 1 }, { transform: `translate(${destX}px, ${destY}px) scale(0)`, opacity: 0 }], { duration: 1000, easing: 'ease-out' }).onfinish = () => sparkle.remove();
+        }
+
+        // --- THREE.JS UNIVERSE ---
+        function initThreeJS() {
+            const canvas = document.getElementById('bg-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            const starsGeo = new THREE.BufferGeometry();
+            const starsCount = 2000;
+            const posArray = new Float32Array(starsCount * 3);
+            for(let i=0; i<starsCount*3; i++) posArray[i] = (Math.random()-0.5) * 150;
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const starsMat = new THREE.PointsMaterial({ size: 0.1, color: 0xffffff, transparent: true, opacity: 0.8 });
+            const starMesh = new THREE.Points(starsGeo, starsMat);
+            scene.add(starMesh);
+
+            const heartShape = new THREE.Shape();
+            const x = 0, y = 0;
+            heartShape.moveTo( x + 5, y + 5 );
+            heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
+            heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
+            heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
+            heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
+            heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
+            heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
+            const heartGeo = new THREE.ShapeGeometry(heartShape);
+            const heartMat = new THREE.MeshBasicMaterial({ color: 0xff7eb3, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+            
+            const hearts = [];
+            for(let i=0; i<30; i++) {
+                const mesh = new THREE.Mesh(heartGeo, heartMat);
+                mesh.position.set((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*50 - 20);
+                mesh.rotation.z = Math.PI;
+                const s = Math.random() * 0.1 + 0.05;
+                mesh.scale.set(s, s, s);
+                scene.add(mesh);
+                hearts.push({ mesh, speed: Math.random()*0.05 + 0.02 });
+            }
+            camera.position.z = 50;
+
+            let mouseX = 0;
+            let mouseY = 0;
+            window.addEventListener('mousemove', e => {
+                mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+                mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                starMesh.rotation.y += 0.0005;
+                starMesh.rotation.x += 0.0002;
+                camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
+                camera.position.y += (mouseY * 2 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+                hearts.forEach(h => {
+                    h.mesh.position.y += h.speed;
+                    if(h.mesh.position.y > 50) h.mesh.position.y = -50;
+                    h.mesh.rotation.y += 0.01;
+                });
+                renderer.render(scene, camera);
+            }
+            animate();
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        initThreeJS();
+
+        // --- LOGIC ---
+        function changeStage(nextId) {
+            const current = document.querySelector('.stage.active');
+            const next = document.getElementById('stage-' + nextId);
+            
+            gsap.to(current, {
+                opacity: 0,
+                duration: 0.5,
+                onComplete: () => {
+                    current.classList.remove('active');
+                    current.style.visibility = 'hidden';
+                    next.classList.add('active');
+                    gsap.fromTo(next, { opacity: 0 }, { opacity: 1, duration: 0.8 });
+                }
+            });
+        }
+
+        // STAGE 1
+        function checkPass() {
+            const val = document.getElementById('pass-input').value.toLowerCase().trim();
+            if (val === 'toibikhung' || val === '') {
+                playSound('win');
+                toggleMusic(true); // Force play music on interaction
+                changeStage(2);
+                initTrap();
+            } else {
+                const input = document.getElementById('pass-input');
+                input.style.borderColor = 'red';
+                input.animate([{transform: 'translateX(0)'}, {transform: 'translateX(10px)'}, {transform: 'translateX(-10px)'}, {transform: 'translateX(0)'}], {duration: 300});
+                Swal.fire({ icon: 'error', title: 'Sai gòiii!', text: 'Gợi ý: Biệt danh anh hay gọi em (toibikhung)', background: '#222', color: '#fff' });
+            }
+        }
+
+        // STAGE 2
+        function initTrap() {
+            const btnNo = document.getElementById('btn-no');
+            const btnYes = document.querySelector('.btn-yes');
+            
+            // Trick logic: Nút No visible ngay từ đầu, nhưng di chuột vào là chạy
+            const moveBtn = () => {
+                const w = window.innerWidth - 100;
+                const h = window.innerHeight - 50;
+                const yesRect = btnYes.getBoundingClientRect();
+                
+                let newX, newY, overlap;
+                do {
+                    newX = Math.random() * w;
+                    newY = Math.random() * h;
+                    overlap = (newX > yesRect.left - 100 && newX < yesRect.right + 100 && 
+                               newY > yesRect.top - 100 && newY < yesRect.bottom + 100);
+                } while(overlap);
+
+                btnNo.style.position = 'fixed'; // Switch to fixed to fly around
+                btnNo.style.left = newX + 'px';
+                btnNo.style.top = newY + 'px';
+                playSound('hover');
+            };
+            
+            btnNo.addEventListener('mouseenter', moveBtn);
+            btnNo.addEventListener('touchstart', (e) => { e.preventDefault(); moveBtn(); });
+        }
+
+        function passTrap() {
+            playSound('win');
+            toggleMusic(true); 
+            changeStage(3);
+            playIntro();
+        }
+
+        // STAGE 3
+        function playIntro() {
+            const lines = [
+                "Chào công chúa...",
+                "Cảm ơn em đã đến bên đời anh",
+                "Biến thế giới tẻ nhạt này thành màu hồng",
+                "Anh có một bí mật muốn cho em xem..."
+            ];
+            const container = document.getElementById('stage-3');
+            
+            let tl = gsap.timeline({
+                onComplete: () => {
+                    changeStage(4);
+                    initGallery();
+                }
+            });
+
+            lines.forEach(line => {
+                const p = document.createElement('h1');
+                p.innerText = line;
+                p.className = 'title-font';
+                p.style.position = 'absolute';
+                p.style.fontSize = '3rem';
+                p.style.color = 'var(--primary)';
+                p.style.opacity = 0;
+                container.appendChild(p);
+                
+                tl.to(p, { opacity: 1, y: -20, duration: 1.5, ease: 'power2.out' })
+                  .to(p, { opacity: 0, y: -40, duration: 1, delay: 1 });
+            });
+        }
+
+        // STAGE 4: GALLERY
+        const memories = [
+            { img: 'https://picsum.photos/300/300?r=1', text: "Lần đầu gặp gỡ" },
+            { img: 'https://picsum.photos/300/300?r=2', text: "Nụ hôn đầu" },
+            { img: 'https://picsum.photos/300/300?r=3', text: "Đi Đà Lạt" },
+            { img: 'https://picsum.photos/300/300?r=4', text: "Lúc em dỗi" },
+            { img: 'https://picsum.photos/300/300?r=5', text: "Ăn sập quán" },
+            { img: 'https://picsum.photos/300/300?r=6', text: "Mãi bên nhau" }
+        ];
+
+        function initGallery() {
+            const carousel = document.getElementById('carousel');
+            const radius = 400;
+            const total = memories.length;
+            
+            memories.forEach((m, i) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<img src="${m.img}"><p>${m.text}</p>`;
+                const angle = (i / total) * Math.PI * 2;
+                card.style.transform = `rotateY(${angle}rad) translateZ(${radius}px)`;
+                carousel.appendChild(card);
+            });
+
+            let currAngle = 0;
+            let targetAngle = 0;
+            let isDown = false;
+            let startX = 0;
+            const nextBtn = document.getElementById('btn-next-stage');
+
+            function tick() {
+                currAngle += (targetAngle - currAngle) * 0.05;
+                carousel.style.transform = `translateZ(-${radius}px) rotateY(${currAngle}rad)`;
+                if (Math.abs(currAngle) > 2 && nextBtn.style.opacity == 0) {
+                    nextBtn.style.visibility = 'visible';
+                    nextBtn.style.opacity = 1;
+                }
+                requestAnimationFrame(tick);
+            }
+            tick();
+
+            window.addEventListener('mousedown', e => { isDown = true; startX = e.clientX; });
+            window.addEventListener('touchstart', e => { isDown = true; startX = e.touches[0].clientX; });
+            window.addEventListener('mouseup', () => isDown = false);
+            window.addEventListener('touchend', () => isDown = false);
+            window.addEventListener('mousemove', e => {
+                if(!isDown) return;
+                const delta = (e.clientX - startX) * 0.005;
+                targetAngle += delta;
+                startX = e.clientX;
+            });
+            window.addEventListener('touchmove', e => {
+                if(!isDown) return;
+                const delta = (e.touches[0].clientX - startX) * 0.005;
+                targetAngle += delta;
+                startX = e.touches[0].clientX;
+            });
+            window.addEventListener('wheel', e => { targetAngle -= e.deltaY * 0.002; });
+        }
+
+        function toBirthday() {
+            playSound('win');
+            changeStage(5);
+            initBirthday();
+        }
+
+        // STAGE 5: BIRTHDAY
+        function initBirthday() {
+            const msg = "Chúc mừng sinh nhật em yêu! 🎂\nChúc em tuổi mới luôn xinh đẹp, hạnh phúc và bớt bắt nạt anh lại nhé! Yêu em <3";
+            const el = document.getElementById('bday-text');
+            let i = 0;
+            function type() {
+                if(i < msg.length) {
+                    el.innerHTML += msg.charAt(i) === '\n' ? '<br>' : msg.charAt(i);
+                    i++;
+                    setTimeout(type, 50);
+                }
+            }
+            type();
+
+            const btnBlow = document.getElementById('btn-blow');
+            const bar = document.getElementById('breath-bar');
+            const flame = document.getElementById('flame');
+            let power = 0;
+            let timer;
+
+            const blow = () => {
+                timer = setInterval(() => {
+                    power += 2;
+                    bar.style.width = Math.min(power, 100) + '%';
+                    flame.style.transform = `scale(${1 + power/100}) rotate(${Math.random()*10-5}deg)`;
+                    if (power >= 100) {
+                        clearInterval(timer);
+                        flame.style.opacity = 0;
+                        btnBlow.style.display = 'none';
+                        playSound('win');
+                        fireConfetti();
+                        setTimeout(() => changeStage(6) || initQuiz(), 3000);
+                    }
+                }, 30);
+            };
+            const stop = () => {
+                clearInterval(timer);
+                power = 0;
+                bar.style.width = '0%';
+                flame.style.transform = 'scale(1)';
+            };
+
+            btnBlow.addEventListener('mousedown', blow);
+            btnBlow.addEventListener('mouseup', stop);
+            btnBlow.addEventListener('touchstart', (e) => { e.preventDefault(); blow(); });
+            btnBlow.addEventListener('touchend', stop);
+        }
+
+        function fireConfetti() {
+            const duration = 3000;
+            const end = Date.now() + duration;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        // STAGE 6: QUIZ
+        const questions = [
+            { q: "Món ăn anh thích nhất khi đi cùng em?", a: ["Lẩu", "Nướng", "Em (Ahihi)", "Cơm bụi"], c: 2 },
+            { q: "Nếu giận nhau ai sẽ làm hòa trước?", a: ["Anh", "Em", "Tùy tâm trạng", "Anh (Vô điều kiện)"], c: 3 },
+            { q: "Sở thích chung lớn nhất của tụi mình?", a: ["Ngủ", "Ăn uống", "Đi chơi", "Kiếm tiền"], c: 1 }
+        ];
+        let qIdx = 0;
+
+        function initQuiz() {
+            renderQ();
+        }
+
+        function renderQ() {
+            const box = document.getElementById('quiz-box');
+            if (qIdx >= questions.length) {
+                box.innerHTML = `<h2 style="color:var(--accent)">YOU ARE MY EVERYTHING! 💖</h2><p>Anh yêu em nhiều lắm!</p>`;
+                fireConfetti();
+                return;
+            }
+            const q = questions[qIdx];
+            box.innerHTML = `<p style="font-size:1.2rem; margin-bottom:20px">${q.q}</p>`;
+            q.a.forEach((ans, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-primary';
+                btn.style.width = '100%';
+                btn.style.marginBottom = '10px';
+                btn.innerText = ans;
+                btn.onclick = () => checkAns(i, q.c);
+                btn.onmouseenter = () => playSound('hover');
+                box.appendChild(btn);
+            });
+        }
+
+        function checkAns(idx, correct) {
+            if (idx === correct) {
+                playSound('win');
+                Swal.fire({ icon: 'success', title: 'Chuẩn không cần chỉnh!', timer: 1000, showConfirmButton: false });
+                qIdx++;
+                setTimeout(renderQ, 1000);
+            } else {
+                playSound('click');
+                Swal.fire({ icon: 'error', title: 'Sai rùi!', text: 'Nhưng anh vẫn yêu em :v', timer: 1000, showConfirmButton: false });
+            }
+        }
+
+        function toggleMusic(force) {
+            const audio = document.getElementById('bg-music');
+            const btn = document.querySelector('.music-control');
+            if (force || audio.paused) {
+                audio.play().catch(e => {
+                    console.log("Autoplay prevented by browser. User interaction needed.");
+                    // Pulse the button to draw attention
+                    btn.style.animation = "spin 0.5s infinite";
+                    setTimeout(() => btn.style.animation = "none", 2000);
+                });
+                btn.classList.add('playing');
+            } else {
+                audio.pause();
+                btn.classList.remove('playing');
+            }
+        }
+    </script>
 </body>
 </html>
