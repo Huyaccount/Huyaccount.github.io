@@ -2,839 +2,482 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>The Girl Who Stole My RAM - Final Masterpiece</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-Means Clustering Pro | Phân tích Dữ liệu</title>
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;700&family=Pacifico&family=Quicksand:wght@500&display=swap" rel="stylesheet">
-    
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Thư viện UI: Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Thư viện Biểu đồ: Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <!-- Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font chữ Google -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --primary: #ff7eb3;
-            --secondary: #ff758c;
-            --accent: #7afcff;
-            --bg-dark: #0f0518;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text-glow: 0 0 10px rgba(255, 126, 179, 0.8);
-            --box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background-color: var(--bg-dark);
-            color: white;
-            font-family: 'Quicksand', sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            cursor: none; /* Ẩn chuột mặc định để dùng custom cursor */
-        }
-
-        /* --- CUSTOM CURSOR --- */
-        #cursor-dot, #cursor-dot-outline {
-            position: fixed;
-            top: 0;
-            left: 0;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            z-index: 9999;
-            pointer-events: none;
-        }
-        #cursor-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--accent);
-            box-shadow: 0 0 10px var(--accent);
-        }
-        #cursor-dot-outline {
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--primary);
-            transition: width 0.2s, height 0.2s;
-        }
-
-        /* --- BACKGROUND --- */
-        #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-
-        /* --- UI UTILITIES --- */
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: var(--box-shadow);
-            padding: 3rem;
-            text-align: center;
-            animation: floatPanel 6s ease-in-out infinite;
-        }
-
-        @keyframes floatPanel {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .title-font { font-family: 'Dancing Script', cursive; }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            padding: 16px 48px;
-            font-family: 'Pacifico', cursive;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            cursor: none;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 15px rgba(255, 117, 140, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: 0.5s;
-        }
-
-        .btn-primary:hover {
-            transform: scale(1.05) translateY(-3px);
-            box-shadow: 0 8px 25px rgba(255, 117, 140, 0.6);
-        }
-        .btn-primary:hover::after { left: 100%; }
-        .btn-primary:active { transform: scale(0.95); }
-
-        /* --- STAGES --- */
-        .stage {
-            position: absolute;
-            width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.5s, visibility 0.5s;
-            z-index: 10;
-        }
-        .stage.active { opacity: 1; visibility: visible; }
-
-        /* STAGE 1: LOGIN */
-        .login-input {
-            background: rgba(0, 0, 0, 0.2);
-            border: 2px solid var(--secondary);
-            padding: 15px 25px;
-            border-radius: 50px;
-            color: white;
-            font-size: 1.2rem;
-            width: 100%;
-            max-width: 300px;
-            margin: 25px 0;
-            text-align: center;
-            outline: none;
-            font-family: 'Quicksand', sans-serif;
-            transition: 0.3s;
-        }
-        .login-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 20px rgba(122, 252, 255, 0.3);
-        }
-
-        /* STAGE 2: THE TRAP */
-        .love-msg {
-            font-size: 4.5rem;
-            color: var(--primary);
-            text-shadow: var(--text-glow);
-            margin-bottom: 3rem;
-            animation: heartbeat 1.5s infinite;
-            position: relative;
-            z-index: 10;
-        }
-        @keyframes heartbeat {
-            0%, 100% { transform: scale(1); }
-            15% { transform: scale(1.1); }
-            30% { transform: scale(1); }
-            45% { transform: scale(1.1); }
-        }
-
-        .btn-group {
-            position: relative; 
-            width: 100%; 
-            height: 200px; /* Đủ không gian cho nút chạy */
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-        }
-
-        /* STAGE 4: GALLERY */
-        .gallery-container {
-            perspective: 1200px;
-            width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .carousel {
-            position: relative;
-            width: 320px; height: 450px;
-            transform-style: preserve-3d;
-        }
-        .card {
-            position: absolute;
-            width: 300px; height: 420px;
-            left: 10px; top: 15px;
-            background: rgba(255,255,255,0.95);
-            padding: 15px 15px 60px 15px;
-            border-radius: 4px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            backface-visibility: hidden;
-            display: flex; flex-direction: column; align-items: center;
-            -webkit-box-reflect: below 10px linear-gradient(transparent, transparent, rgba(255,255,255,0.2));
-        }
-        .card img {
-            width: 100%; height: 280px;
-            object-fit: cover;
-            background: #eee;
-        }
-        .card p {
-            margin-top: 15px;
-            color: #333;
-            font-family: 'Dancing Script', cursive;
-            font-size: 1.8rem;
-        }
-
-        /* STAGE 5: CAKE */
-        .cake-base {
-            position: relative;
-            width: 250px; height: 200px;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-        }
-        .layer {
-            width: 100%;
-            background: linear-gradient(to right, #ff9a9e, #fecfef);
-            border-radius: 10px;
-            position: relative;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        .layer-bottom { height: 80px; width: 240px; z-index: 1; }
-        .layer-top { height: 70px; width: 170px; z-index: 2; margin-bottom: -10px; }
-        
-        .icing {
-            position: absolute; top: 0; left: 0; width: 100%; height: 20px;
-            background: #fff;
-            border-radius: 10px 10px 5px 5px;
-            background-image: radial-gradient(circle at 10px 10px, #fff 10px, transparent 11px);
-            background-size: 20px 20px;
-            background-repeat: repeat-x;
-        }
-
-        .candle {
-            width: 12px; height: 50px;
-            background: repeating-linear-gradient(45deg, #fff, #fff 5px, var(--accent) 5px, var(--accent) 10px);
-            position: absolute; top: -45px; z-index: 3;
-            border-radius: 4px;
-        }
-        .flame {
-            width: 16px; height: 28px;
-            background: #ff9d00;
-            border-radius: 50% 50% 20% 20%;
-            position: absolute; top: -28px; left: -2px;
-            box-shadow: 0 0 10px #ff9d00, 0 0 20px #ff0000;
-            animation: flicker 0.1s infinite alternate;
-        }
-        @keyframes flicker {
-            0% { transform: scale(1) rotate(-2deg); opacity: 1; }
-            100% { transform: scale(1.1) rotate(2deg); opacity: 0.8; }
-        }
-
-        /* MUSIC CONTROL */
-        .music-control {
-            position: fixed; bottom: 30px; right: 30px;
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.2);
-            display: flex; justify-content: center; align-items: center;
-            cursor: none;
-            z-index: 100;
-            transition: 0.3s;
-            color: white;
-        }
-        .music-control:hover { background: var(--primary); transform: scale(1.1); }
-        .music-control.playing { animation: spin 3s linear infinite; border-color: var(--primary); color: var(--primary); box-shadow: 0 0 15px var(--primary); }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .love-msg { font-size: 3rem; }
-            .glass-panel { padding: 1.5rem; width: 90%; }
-            .card { width: 260px; height: 360px; }
-            .carousel { width: 280px; height: 380px; }
-            .btn-group { flex-direction: column; height: 300px; justify-content: space-evenly; }
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .step-card { transition: all 0.3s ease; }
+        .step-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
     </style>
 </head>
-<body>
+<body class="text-slate-800">
 
-    <!-- Custom Cursor -->
-    <div id="cursor-dot"></div>
-    <div id="cursor-dot-outline"></div>
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-6 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-diagram-project"></i> K-Means Visualization
+            </h1>
+            <p class="text-sm opacity-90 mt-2 md:mt-0">Công cụ phân cụm & Vẽ biểu đồ tự động</p>
+        </div>
+    </header>
 
-    <!-- 3D Background -->
-    <canvas id="bg-canvas"></canvas>
-
-    <!-- Audio System -->
-    <audio id="bg-music" loop></audio>
-    <div class="music-control" onclick="toggleMusic()">
-        <i class="fas fa-music"></i>
-    </div>
-
-    <!-- STAGE 1: LOGIN -->
-    <div id="stage-1" class="stage active">
-        <div class="glass-panel">
-            <h1 class="title-font" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 10px;">Hello Công Chúa</h1>
-            <p style="font-size: 1.1rem; opacity: 0.9;">Cánh cửa dẫn đến trái tim anh đang bị khóa...</p>
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- INPUT SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             
-            <input type="password" id="pass-input" class="login-input" placeholder="Nhập mật khẩu (toibikhung)">
-            <br>
-            <button class="btn-primary" onclick="checkPass()">Mở Khóa 💖</button>
-        </div>
-    </div>
-
-    <!-- STAGE 2: THE TRAP -->
-    <div id="stage-2" class="stage">
-        <h1 class="title-font love-msg">Em có yêu anh không?</h1>
-        <div class="btn-group">
-            <!-- Nút Có: Cố định -->
-            <button class="btn-primary btn-yes" style="z-index: 2;" onclick="passTrap()">
-                Có, yêu lắm cơ! 🥰
-            </button>
-            <!-- Nút Không: Sẽ chạy -->
-            <button id="btn-no" class="btn-primary" style="background: #555; transition: top 0.2s, left 0.2s;">
-                Không thèm
-            </button>
-        </div>
-    </div>
-
-    <!-- STAGE 3: CINEMATIC INTRO -->
-    <div id="stage-3" class="stage">
-        <!-- Text injected via JS -->
-    </div>
-
-    <!-- STAGE 4: GALLERY -->
-    <div id="stage-4" class="stage">
-        <div class="gallery-container">
-            <div class="carousel" id="carousel">
-                <!-- Cards injected via JS -->
-            </div>
-        </div>
-        <div style="position: fixed; bottom: 30px; text-align: center; width: 100%; color: rgba(255,255,255,0.6); pointer-events: none;">
-            <i class="fas fa-hand-pointer"></i> Kéo thả hoặc cuộn chuột để xem kỷ niệm
-        </div>
-        <button id="btn-next-stage" class="btn-primary" style="position: fixed; bottom: 80px; opacity: 0; visibility: hidden;" onclick="toBirthday()">
-            Đi tới tiệc sinh nhật 🎂
-        </button>
-    </div>
-
-    <!-- STAGE 5: BIRTHDAY -->
-    <div id="stage-5" class="stage">
-        <div class="glass-panel" style="max-width: 600px;">
-            <h1 id="bday-text" class="title-font" style="font-size: 2.5rem; color: var(--primary); min-height: 80px;"></h1>
-            
-            <div class="cake-base" style="margin: 30px auto;">
-                <div class="layer layer-top">
-                    <div class="icing"></div>
-                    <div class="candle" id="candle">
-                        <div class="flame" id="flame"></div>
+            <!-- Cột 1: Cấu hình Dữ liệu -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6 border border-slate-100">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 class="text-xl font-bold text-slate-700"><i class="fa-solid fa-database text-blue-500 mr-2"></i>Dữ liệu đầu vào</h2>
+                    <div class="space-x-2">
+                        <button onclick="loadSampleData()" class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full hover:bg-emerald-200 font-semibold transition">
+                            <i class="fa-solid fa-rotate-left"></i> Nạp bài tập mẫu
+                        </button>
+                        <button onclick="resetData()" class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full hover:bg-red-200 font-semibold transition">
+                            <i class="fa-solid fa-trash"></i> Xóa trắng
+                        </button>
                     </div>
                 </div>
-                <div class="layer layer-bottom">
-                    <div class="icing"></div>
+
+                <!-- Nhập số lượng N -->
+                <div class="flex gap-4 items-end mb-4">
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Số lượng điểm (N)</label>
+                        <input type="number" id="inputN" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Ví dụ: 18">
+                    </div>
+                    <button onclick="generateTable()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition shadow-md md:mb-[1px]">
+                        <i class="fa-solid fa-table"></i> Tạo bảng nhập
+                    </button>
+                </div>
+
+                <!-- Bảng nhập tọa độ -->
+                <div class="overflow-y-auto max-h-[300px] border rounded-lg bg-slate-50">
+                    <table class="w-full text-sm text-left text-slate-600">
+                        <thead class="text-xs text-slate-700 uppercase bg-slate-200 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-center w-16">STT</th>
+                                <th class="px-4 py-3 text-center">Tọa độ X1</th>
+                                <th class="px-4 py-3 text-center">Tọa độ X2</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inputTableBody">
+                            <!-- Dòng dữ liệu sẽ được sinh ra ở đây -->
+                            <tr><td colspan="3" class="text-center py-8 text-slate-400">Vui lòng nhập N và nhấn "Tạo bảng" hoặc chọn "Nạp bài tập mẫu"</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <div style="width: 100%; background: #444; height: 8px; border-radius: 4px; margin: 20px 0; overflow: hidden;">
-                <div id="breath-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.1s;"></div>
+            <!-- Cột 2: Cấu hình Tâm & Chạy -->
+            <div class="flex flex-col gap-6">
+                <!-- Cấu hình Tâm -->
+                <div class="bg-white rounded-xl shadow-md p-6 border border-slate-100 h-full">
+                    <h2 class="text-xl font-bold text-slate-700 mb-4 border-b pb-2"><i class="fa-solid fa-crosshairs text-rose-500 mr-2"></i>Chọn Tâm Khởi Tạo</h2>
+                    <p class="text-xs text-slate-500 mb-4">Nhập số thứ tự (STT) của điểm dữ liệu muốn chọn làm tâm.</p>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-red-600 uppercase mb-1">Tâm 1 (Đỏ)</label>
+                            <input type="number" id="c1_id" value="2" class="w-full px-3 py-2 border border-red-200 bg-red-50 rounded-lg focus:ring-red-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-green-600 uppercase mb-1">Tâm 2 (Xanh lá)</label>
+                            <input type="number" id="c2_id" value="10" class="w-full px-3 py-2 border border-green-200 bg-green-50 rounded-lg focus:ring-green-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-blue-600 uppercase mb-1">Tâm 3 (Xanh dương)</label>
+                            <input type="number" id="c3_id" value="5" class="w-full px-3 py-2 border border-blue-200 bg-blue-50 rounded-lg focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <button onclick="runKMeans()" class="w-full mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transform active:scale-95 transition flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-play"></i> CHẠY PHÂN TÍCH
+                    </button>
+                </div>
             </div>
-            <p style="margin-bottom: 15px; font-size: 0.9rem;">Nhấn giữ nút bên dưới để thổi nến!</p>
-            <button id="btn-blow" class="btn-primary">💨 Thổi Nến</button>
         </div>
-    </div>
 
-    <!-- STAGE 6: QUIZ -->
-    <div id="stage-6" class="stage">
-        <div class="glass-panel" style="width: 90%; max-width: 500px;">
-            <h2 class="title-font" style="color: var(--primary); margin-bottom: 20px;">Thử thách tình yêu</h2>
-            <div id="quiz-box"></div>
+        <!-- RESULT SECTION -->
+        <div id="resultArea" class="space-y-8 hidden">
+            <div class="flex items-center gap-4">
+                <div class="h-px bg-slate-300 flex-1"></div>
+                <h2 class="text-2xl font-bold text-slate-700 uppercase tracking-wide">Kết Quả Phân Tích</h2>
+                <div class="h-px bg-slate-300 flex-1"></div>
+            </div>
+            
+            <!-- Nội dung kết quả sẽ được JS chèn vào đây -->
         </div>
-    </div>
 
+    </main>
+
+    <footer class="bg-slate-800 text-slate-400 py-6 mt-12 text-center text-sm">
+        <p>Công cụ hỗ trợ học tập môn Khai thác dữ liệu.</p>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- AUDIO SYSTEM (THE IMMORTAL) ---
-        // Danh sách các link nhạc dự phòng (Fallbacks)
-        const playlist = [
-            "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-piano-115553.mp3", // Link Cũ (Romantic Wedding) - Ưu tiên số 1
-            "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b9767f6b.mp3", // Link Piano Moment (Backup 1)
-            "https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3" // Link Romantic Piano (Backup 2)
-        ];
-        let currentSongIdx = 0;
-        const audio = document.getElementById('bg-music');
+        // --- 1. DATA MANAGEMENT ---
+        let dataPoints = [];
 
-        function loadMusic() {
-            audio.src = playlist[currentSongIdx];
-            audio.load();
-        }
-        
-        // Tự động chuyển link nếu lỗi
-        audio.onerror = function() {
-            console.log("Link nhạc lỗi, đang chuyển link khác...");
-            currentSongIdx = (currentSongIdx + 1) % playlist.length;
-            loadMusic();
-        };
-
-        // Khởi tạo
-        loadMusic();
-
-        // --- AUDIO CONTEXT SFX ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            const now = audioCtx.currentTime;
-            
-            if (type === 'hover') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
-                gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-                osc.start(now); osc.stop(now + 0.1);
-            } else if (type === 'click') {
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.2);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-                osc.start(now); osc.stop(now + 0.2);
-            } else if (type === 'win') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(500, now); osc.frequency.setValueAtTime(800, now + 0.2);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
-            }
-        }
-
-        document.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('mouseenter', () => playSound('hover'));
-            btn.addEventListener('click', () => playSound('click'));
-        });
-
-        // --- CUSTOM CURSOR ---
-        const cursorDot = document.getElementById("cursor-dot");
-        const cursorOutline = document.getElementById("cursor-dot-outline");
-
-        window.addEventListener("mousemove", (e) => {
-            const posX = e.clientX;
-            const posY = e.clientY;
-            cursorDot.style.left = `${posX}px`;
-            cursorDot.style.top = `${posY}px`;
-            cursorOutline.animate({ left: `${posX}px`, top: `${posY}px` }, { duration: 500, fill: "forwards" });
-            if (Math.random() > 0.8) createSparkle(posX, posY);
-        });
-
-        function createSparkle(x, y) {
-            const sparkle = document.createElement('div');
-            sparkle.style.position = 'fixed';
-            sparkle.style.left = x + 'px';
-            sparkle.style.top = y + 'px';
-            sparkle.style.width = Math.random() * 4 + 'px';
-            sparkle.style.height = sparkle.style.width;
-            sparkle.style.background = `hsl(${Math.random() * 360}, 100%, 80%)`;
-            sparkle.style.borderRadius = '50%';
-            sparkle.style.pointerEvents = 'none';
-            sparkle.style.zIndex = '9998';
-            document.body.appendChild(sparkle);
-            const destX = (Math.random() - 0.5) * 50;
-            const destY = (Math.random() - 0.5) * 50;
-            sparkle.animate([{ transform: 'translate(0, 0) scale(1)', opacity: 1 }, { transform: `translate(${destX}px, ${destY}px) scale(0)`, opacity: 0 }], { duration: 1000, easing: 'ease-out' }).onfinish = () => sparkle.remove();
-        }
-
-        // --- THREE.JS UNIVERSE ---
-        function initThreeJS() {
-            const canvas = document.getElementById('bg-canvas');
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-
-            const starsGeo = new THREE.BufferGeometry();
-            const starsCount = 2000;
-            const posArray = new Float32Array(starsCount * 3);
-            for(let i=0; i<starsCount*3; i++) posArray[i] = (Math.random()-0.5) * 150;
-            starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starsMat = new THREE.PointsMaterial({ size: 0.1, color: 0xffffff, transparent: true, opacity: 0.8 });
-            const starMesh = new THREE.Points(starsGeo, starsMat);
-            scene.add(starMesh);
-
-            const heartShape = new THREE.Shape();
-            const x = 0, y = 0;
-            heartShape.moveTo( x + 5, y + 5 );
-            heartShape.bezierCurveTo( x + 5, y + 5, x + 4, y, x, y );
-            heartShape.bezierCurveTo( x - 6, y, x - 6, y + 7,x - 6, y + 7 );
-            heartShape.bezierCurveTo( x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19 );
-            heartShape.bezierCurveTo( x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7 );
-            heartShape.bezierCurveTo( x + 16, y + 7, x + 16, y, x + 10, y );
-            heartShape.bezierCurveTo( x + 7, y, x + 5, y + 5, x + 5, y + 5 );
-            const heartGeo = new THREE.ShapeGeometry(heartShape);
-            const heartMat = new THREE.MeshBasicMaterial({ color: 0xff7eb3, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-            
-            const hearts = [];
-            for(let i=0; i<30; i++) {
-                const mesh = new THREE.Mesh(heartGeo, heartMat);
-                mesh.position.set((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*50 - 20);
-                mesh.rotation.z = Math.PI;
-                const s = Math.random() * 0.1 + 0.05;
-                mesh.scale.set(s, s, s);
-                scene.add(mesh);
-                hearts.push({ mesh, speed: Math.random()*0.05 + 0.02 });
-            }
-            camera.position.z = 50;
-
-            let mouseX = 0;
-            let mouseY = 0;
-            window.addEventListener('mousemove', e => {
-                mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-                mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
-            });
-
-            function animate() {
-                requestAnimationFrame(animate);
-                starMesh.rotation.y += 0.0005;
-                starMesh.rotation.x += 0.0002;
-                camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
-                camera.position.y += (mouseY * 2 - camera.position.y) * 0.05;
-                camera.lookAt(scene.position);
-                hearts.forEach(h => {
-                    h.mesh.position.y += h.speed;
-                    if(h.mesh.position.y > 50) h.mesh.position.y = -50;
-                    h.mesh.rotation.y += 0.01;
-                });
-                renderer.render(scene, camera);
-            }
-            animate();
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth/window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        }
-        initThreeJS();
-
-        // --- LOGIC ---
-        function changeStage(nextId) {
-            const current = document.querySelector('.stage.active');
-            const next = document.getElementById('stage-' + nextId);
-            
-            gsap.to(current, {
-                opacity: 0,
-                duration: 0.5,
-                onComplete: () => {
-                    current.classList.remove('active');
-                    current.style.visibility = 'hidden';
-                    next.classList.add('active');
-                    gsap.fromTo(next, { opacity: 0 }, { opacity: 1, duration: 0.8 });
-                }
-            });
-        }
-
-        // STAGE 1
-        function checkPass() {
-            const val = document.getElementById('pass-input').value.toLowerCase().trim();
-            if (val === 'toibikhung' || val === '') {
-                playSound('win');
-                toggleMusic(true); // Force play music on interaction
-                changeStage(2);
-                initTrap();
-            } else {
-                const input = document.getElementById('pass-input');
-                input.style.borderColor = 'red';
-                input.animate([{transform: 'translateX(0)'}, {transform: 'translateX(10px)'}, {transform: 'translateX(-10px)'}, {transform: 'translateX(0)'}], {duration: 300});
-                Swal.fire({ icon: 'error', title: 'Sai gòiii!', text: 'Gợi ý: Biệt danh anh hay gọi em (toibikhung)', background: '#222', color: '#fff' });
-            }
-        }
-
-        // STAGE 2
-        function initTrap() {
-            const btnNo = document.getElementById('btn-no');
-            const btnYes = document.querySelector('.btn-yes');
-            
-            // Trick logic: Nút No visible ngay từ đầu, nhưng di chuột vào là chạy
-            const moveBtn = () => {
-                const w = window.innerWidth - 100;
-                const h = window.innerHeight - 50;
-                const yesRect = btnYes.getBoundingClientRect();
-                
-                let newX, newY, overlap;
-                do {
-                    newX = Math.random() * w;
-                    newY = Math.random() * h;
-                    overlap = (newX > yesRect.left - 100 && newX < yesRect.right + 100 && 
-                               newY > yesRect.top - 100 && newY < yesRect.bottom + 100);
-                } while(overlap);
-
-                btnNo.style.position = 'fixed'; // Switch to fixed to fly around
-                btnNo.style.left = newX + 'px';
-                btnNo.style.top = newY + 'px';
-                playSound('hover');
-            };
-            
-            btnNo.addEventListener('mouseenter', moveBtn);
-            btnNo.addEventListener('touchstart', (e) => { e.preventDefault(); moveBtn(); });
-        }
-
-        function passTrap() {
-            playSound('win');
-            toggleMusic(true); 
-            changeStage(3);
-            playIntro();
-        }
-
-        // STAGE 3
-        function playIntro() {
-            const lines = [
-                "Chào công chúa...",
-                "Cảm ơn em đã đến bên đời anh",
-                "Biến thế giới tẻ nhạt này thành màu hồng",
-                "Anh có một bí mật muốn cho em xem..."
-            ];
-            const container = document.getElementById('stage-3');
-            
-            let tl = gsap.timeline({
-                onComplete: () => {
-                    changeStage(4);
-                    initGallery();
-                }
-            });
-
-            lines.forEach(line => {
-                const p = document.createElement('h1');
-                p.innerText = line;
-                p.className = 'title-font';
-                p.style.position = 'absolute';
-                p.style.fontSize = '3rem';
-                p.style.color = 'var(--primary)';
-                p.style.opacity = 0;
-                container.appendChild(p);
-                
-                tl.to(p, { opacity: 1, y: -20, duration: 1.5, ease: 'power2.out' })
-                  .to(p, { opacity: 0, y: -40, duration: 1, delay: 1 });
-            });
-        }
-
-        // STAGE 4: GALLERY
-        const memories = [
-            { img: 'https://picsum.photos/300/300?r=1', text: "Lần đầu gặp gỡ" },
-            { img: 'https://picsum.photos/300/300?r=2', text: "Nụ hôn đầu" },
-            { img: 'https://picsum.photos/300/300?r=3', text: "Đi Đà Lạt" },
-            { img: 'https://picsum.photos/300/300?r=4', text: "Lúc em dỗi" },
-            { img: 'https://picsum.photos/300/300?r=5', text: "Ăn sập quán" },
-            { img: 'https://picsum.photos/300/300?r=6', text: "Mãi bên nhau" }
+        // Dữ liệu mẫu từ bài tập
+        const sampleData = [
+            [1, 5], [3, 5], [2, 13], [3, 4], [7, 5], [2, 6], 
+            [4, 1], [14, 3], [4, 7], [4, 6], [7, 11], [6, 2], 
+            [8, 1], [4, 8], [8, 3], [1, 14], [3, 6], [7, 12]
         ];
 
-        function initGallery() {
-            const carousel = document.getElementById('carousel');
-            const radius = 400;
-            const total = memories.length;
+        function loadSampleData() {
+            document.getElementById('inputN').value = 18;
+            generateTable(sampleData);
+        }
+
+        function resetData() {
+            document.getElementById('inputN').value = '';
+            document.getElementById('inputTableBody').innerHTML = `<tr><td colspan="3" class="text-center py-8 text-slate-400">Đã xóa dữ liệu</td></tr>`;
+            document.getElementById('resultArea').classList.add('hidden');
+            document.getElementById('resultArea').innerHTML = '';
+        }
+
+        function generateTable(prefillData = null) {
+            const n = parseInt(document.getElementById('inputN').value);
+            const tbody = document.getElementById('inputTableBody');
             
-            memories.forEach((m, i) => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `<img src="${m.img}"><p>${m.text}</p>`;
-                const angle = (i / total) * Math.PI * 2;
-                card.style.transform = `rotateY(${angle}rad) translateZ(${radius}px)`;
-                carousel.appendChild(card);
-            });
-
-            let currAngle = 0;
-            let targetAngle = 0;
-            let isDown = false;
-            let startX = 0;
-            const nextBtn = document.getElementById('btn-next-stage');
-
-            function tick() {
-                currAngle += (targetAngle - currAngle) * 0.05;
-                carousel.style.transform = `translateZ(-${radius}px) rotateY(${currAngle}rad)`;
-                if (Math.abs(currAngle) > 2 && nextBtn.style.opacity == 0) {
-                    nextBtn.style.visibility = 'visible';
-                    nextBtn.style.opacity = 1;
-                }
-                requestAnimationFrame(tick);
-            }
-            tick();
-
-            window.addEventListener('mousedown', e => { isDown = true; startX = e.clientX; });
-            window.addEventListener('touchstart', e => { isDown = true; startX = e.touches[0].clientX; });
-            window.addEventListener('mouseup', () => isDown = false);
-            window.addEventListener('touchend', () => isDown = false);
-            window.addEventListener('mousemove', e => {
-                if(!isDown) return;
-                const delta = (e.clientX - startX) * 0.005;
-                targetAngle += delta;
-                startX = e.clientX;
-            });
-            window.addEventListener('touchmove', e => {
-                if(!isDown) return;
-                const delta = (e.touches[0].clientX - startX) * 0.005;
-                targetAngle += delta;
-                startX = e.touches[0].clientX;
-            });
-            window.addEventListener('wheel', e => { targetAngle -= e.deltaY * 0.002; });
-        }
-
-        function toBirthday() {
-            playSound('win');
-            changeStage(5);
-            initBirthday();
-        }
-
-        // STAGE 5: BIRTHDAY
-        function initBirthday() {
-            const msg = "Chúc mừng sinh nhật em yêu! 🎂\nChúc em tuổi mới luôn xinh đẹp, hạnh phúc và bớt bắt nạt anh lại nhé! Yêu em <3";
-            const el = document.getElementById('bday-text');
-            let i = 0;
-            function type() {
-                if(i < msg.length) {
-                    el.innerHTML += msg.charAt(i) === '\n' ? '<br>' : msg.charAt(i);
-                    i++;
-                    setTimeout(type, 50);
-                }
-            }
-            type();
-
-            const btnBlow = document.getElementById('btn-blow');
-            const bar = document.getElementById('breath-bar');
-            const flame = document.getElementById('flame');
-            let power = 0;
-            let timer;
-
-            const blow = () => {
-                timer = setInterval(() => {
-                    power += 2;
-                    bar.style.width = Math.min(power, 100) + '%';
-                    flame.style.transform = `scale(${1 + power/100}) rotate(${Math.random()*10-5}deg)`;
-                    if (power >= 100) {
-                        clearInterval(timer);
-                        flame.style.opacity = 0;
-                        btnBlow.style.display = 'none';
-                        playSound('win');
-                        fireConfetti();
-                        setTimeout(() => changeStage(6) || initQuiz(), 3000);
-                    }
-                }, 30);
-            };
-            const stop = () => {
-                clearInterval(timer);
-                power = 0;
-                bar.style.width = '0%';
-                flame.style.transform = 'scale(1)';
-            };
-
-            btnBlow.addEventListener('mousedown', blow);
-            btnBlow.addEventListener('mouseup', stop);
-            btnBlow.addEventListener('touchstart', (e) => { e.preventDefault(); blow(); });
-            btnBlow.addEventListener('touchend', stop);
-        }
-
-        function fireConfetti() {
-            const duration = 3000;
-            const end = Date.now() + duration;
-            (function frame() {
-                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 } });
-                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 } });
-                if (Date.now() < end) requestAnimationFrame(frame);
-            }());
-        }
-
-        // STAGE 6: QUIZ
-        const questions = [
-            { q: "Món ăn anh thích nhất khi đi cùng em?", a: ["Lẩu", "Nướng", "Em (Ahihi)", "Cơm bụi"], c: 2 },
-            { q: "Nếu giận nhau ai sẽ làm hòa trước?", a: ["Anh", "Em", "Tùy tâm trạng", "Anh (Vô điều kiện)"], c: 3 },
-            { q: "Sở thích chung lớn nhất của tụi mình?", a: ["Ngủ", "Ăn uống", "Đi chơi", "Kiếm tiền"], c: 1 }
-        ];
-        let qIdx = 0;
-
-        function initQuiz() {
-            renderQ();
-        }
-
-        function renderQ() {
-            const box = document.getElementById('quiz-box');
-            if (qIdx >= questions.length) {
-                box.innerHTML = `<h2 style="color:var(--accent)">YOU ARE MY EVERYTHING! 💖</h2><p>Anh yêu em nhiều lắm!</p>`;
-                fireConfetti();
+            if (!n || n <= 0) {
+                alert("Vui lòng nhập số lượng N hợp lệ!");
                 return;
             }
-            const q = questions[qIdx];
-            box.innerHTML = `<p style="font-size:1.2rem; margin-bottom:20px">${q.q}</p>`;
-            q.a.forEach((ans, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'btn-primary';
-                btn.style.width = '100%';
-                btn.style.marginBottom = '10px';
-                btn.innerText = ans;
-                btn.onclick = () => checkAns(i, q.c);
-                btn.onmouseenter = () => playSound('hover');
-                box.appendChild(btn);
-            });
-        }
 
-        function checkAns(idx, correct) {
-            if (idx === correct) {
-                playSound('win');
-                Swal.fire({ icon: 'success', title: 'Chuẩn không cần chỉnh!', timer: 1000, showConfirmButton: false });
-                qIdx++;
-                setTimeout(renderQ, 1000);
-            } else {
-                playSound('click');
-                Swal.fire({ icon: 'error', title: 'Sai rùi!', text: 'Nhưng anh vẫn yêu em :v', timer: 1000, showConfirmButton: false });
+            tbody.innerHTML = '';
+            
+            for (let i = 0; i < n; i++) {
+                const xVal = prefillData ? prefillData[i][0] : '';
+                const yVal = prefillData ? prefillData[i][1] : '';
+
+                const row = `
+                    <tr class="bg-white border-b hover:bg-slate-50">
+                        <td class="px-4 py-2 text-center font-bold text-slate-500">${i}</td>
+                        <td class="px-4 py-2 text-center">
+                            <input type="number" id="x_${i}" value="${xVal}" class="w-full text-center bg-transparent border-b border-dashed border-slate-300 focus:border-blue-500 focus:outline-none py-1" placeholder="x1">
+                        </td>
+                        <td class="px-4 py-2 text-center">
+                            <input type="number" id="y_${i}" value="${yVal}" class="w-full text-center bg-transparent border-b border-dashed border-slate-300 focus:border-blue-500 focus:outline-none py-1" placeholder="x2">
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
             }
         }
 
-        function toggleMusic(force) {
-            const audio = document.getElementById('bg-music');
-            const btn = document.querySelector('.music-control');
-            if (force || audio.paused) {
-                audio.play().catch(e => {
-                    console.log("Autoplay prevented by browser. User interaction needed.");
-                    // Pulse the button to draw attention
-                    btn.style.animation = "spin 0.5s infinite";
-                    setTimeout(() => btn.style.animation = "none", 2000);
+        function readDataFromTable() {
+            const n = parseInt(document.getElementById('inputN').value);
+            const points = [];
+            for (let i = 0; i < n; i++) {
+                const x = parseFloat(document.getElementById(`x_${i}`).value);
+                const y = parseFloat(document.getElementById(`y_${i}`).value);
+                if (isNaN(x) || isNaN(y)) {
+                    alert(`Vui lòng nhập đầy đủ tọa độ cho điểm STT ${i}`);
+                    return null;
+                }
+                points.push({id: i, x: x, y: y});
+            }
+            return points;
+        }
+
+        // --- 2. K-MEANS LOGIC ---
+        
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+
+        function round2(num) {
+            return Math.round((num + Number.EPSILON) * 100) / 100;
+        }
+
+        function runKMeans() {
+            // 1. Lấy dữ liệu
+            dataPoints = readDataFromTable();
+            if (!dataPoints) return;
+
+            // 2. Lấy tâm
+            const c1_id = parseInt(document.getElementById('c1_id').value);
+            const c2_id = parseInt(document.getElementById('c2_id').value);
+            const c3_id = parseInt(document.getElementById('c3_id').value);
+
+            // Validate tâm
+            if (!dataPoints[c1_id] || !dataPoints[c2_id] || !dataPoints[c3_id]) {
+                alert("STT Tâm khởi tạo không tồn tại trong dữ liệu!");
+                return;
+            }
+
+            const resultArea = document.getElementById('resultArea');
+            resultArea.innerHTML = `
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="h-px bg-slate-300 flex-1"></div>
+                    <h2 class="text-2xl font-bold text-slate-700 uppercase tracking-wide">Kết Quả Phân Tích</h2>
+                    <div class="h-px bg-slate-300 flex-1"></div>
+                </div>
+            `;
+            resultArea.classList.remove('hidden');
+
+            let centers = [
+                { ...dataPoints[c1_id], label: 'C1', color: 'red' },
+                { ...dataPoints[c2_id], label: 'C2', color: 'green' },
+                { ...dataPoints[c3_id], label: 'C3', color: 'blue' }
+            ];
+
+            // --- BƯỚC KHỞI TẠO ---
+            renderIteration(0, dataPoints, centers, [], "TRẠNG THÁI KHỞI TẠO (INITIAL)", true);
+
+            // --- VÒNG LẶP ---
+            let maxIterations = 5;
+            let prevAssignments = [];
+
+            for (let iter = 1; iter <= maxIterations; iter++) {
+                let assignments = [];
+                let clusterGroups = [[], [], []];
+                let tableRows = "";
+
+                // Tính khoảng cách & Gán nhóm
+                dataPoints.forEach(point => {
+                    let dists = centers.map(c => getDistance(point, c));
+                    let minD = Math.min(...dists);
+                    let clusterIndex = dists.indexOf(minD); // Ưu tiên index nhỏ (theo đề)
+                    
+                    assignments.push(clusterIndex);
+                    clusterGroups[clusterIndex].push(point);
+
+                    // HTML cho bảng
+                    const badges = [
+                        `<span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded">C1</span>`,
+                        `<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">C2</span>`,
+                        `<span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">C3</span>`
+                    ];
+
+                    tableRows += `
+                        <tr class="border-b hover:bg-slate-50 transition">
+                            <td class="px-4 py-2 font-medium">${point.id}</td>
+                            <td class="px-4 py-2">(${point.x}, ${point.y})</td>
+                            <td class="px-4 py-2 ${clusterIndex===0 ? 'font-bold text-red-600':''}">${round2(dists[0])}</td>
+                            <td class="px-4 py-2 ${clusterIndex===1 ? 'font-bold text-green-600':''}">${round2(dists[1])}</td>
+                            <td class="px-4 py-2 ${clusterIndex===2 ? 'font-bold text-blue-600':''}">${round2(dists[2])}</td>
+                            <td class="px-4 py-2 text-center">${badges[clusterIndex]}</td>
+                        </tr>
+                    `;
                 });
-                btn.classList.add('playing');
-            } else {
-                audio.pause();
-                btn.classList.remove('playing');
+
+                // Cập nhật tâm mới
+                let newCenters = [];
+                let calcInfoHtml = `<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">`;
+                
+                for(let i=0; i<3; i++) {
+                    let group = clusterGroups[i];
+                    let newX, newY, desc;
+                    const colors = ["text-red-600", "text-green-600", "text-blue-600"];
+                    const bgColors = ["bg-red-50", "bg-green-50", "bg-blue-50"];
+                    const borders = ["border-red-200", "border-green-200", "border-blue-200"];
+
+                    if (group.length === 0) {
+                        newX = centers[i].x; newY = centers[i].y;
+                        desc = "Giữ nguyên (Cụm rỗng)";
+                    } else {
+                        let sumX = group.reduce((s, p) => s + p.x, 0);
+                        let sumY = group.reduce((s, p) => s + p.y, 0);
+                        newX = round2(sumX / group.length);
+                        newY = round2(sumY / group.length);
+                        desc = `Trung bình ${group.length} điểm`;
+                    }
+                    newCenters.push({ x: newX, y: newY, label: `C${i+1}`, color: centers[i].color });
+
+                    calcInfoHtml += `
+                        <div class="p-3 rounded-lg border ${borders[i]} ${bgColors[i]}">
+                            <h4 class="font-bold ${colors[i]} text-sm uppercase">Tâm C${i+1} Mới</h4>
+                            <div class="text-xs text-slate-600 mt-1">${desc}</div>
+                            <div class="text-lg font-mono font-bold mt-1">(${newX}, ${newY})</div>
+                        </div>
+                    `;
+                }
+                calcInfoHtml += `</div>`;
+
+                // Render UI cho Iteration này
+                renderIteration(iter, dataPoints, newCenters, assignments, `KẾT QUẢ LẦN LẶP ${iter}`, false, tableRows, calcInfoHtml, centers);
+
+                // Cập nhật biến cho vòng sau
+                centers = newCenters;
+
+                // Check Convergence
+                let isStable = (prevAssignments.length > 0) && (JSON.stringify(assignments) === JSON.stringify(prevAssignments));
+                if (isStable) {
+                    resultArea.innerHTML += `
+                        <div class="bg-emerald-100 border-l-4 border-emerald-500 text-emerald-700 p-4 rounded shadow-sm flex items-center gap-3 mt-6">
+                            <i class="fa-solid fa-circle-check text-2xl"></i>
+                            <div>
+                                <p class="font-bold">THUẬT TOÁN ĐÃ HỘI TỤ!</p>
+                                <p class="text-sm">Các điểm không thay đổi nhóm tại lần lặp thứ ${iter}. Kết thúc thuật toán.</p>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                }
+                prevAssignments = assignments;
             }
         }
+
+        // --- 3. RENDERING UI & CHARTS ---
+
+        function renderIteration(iter, points, centers, assignments, title, isInit, tableRows = "", calcHtml = "", oldCenters = null) {
+            const containerId = `iter_${iter}`;
+            const chartId = `chart_${iter}`;
+            
+            let html = `
+                <div class="step-card bg-white rounded-xl shadow-lg overflow-hidden border border-slate-200 mb-10">
+                    <div class="bg-slate-50 border-b px-6 py-4 flex justify-between items-center">
+                        <h3 class="font-bold text-lg text-slate-700">${title}</h3>
+                        <span class="text-xs font-mono bg-slate-200 px-2 py-1 rounded text-slate-600">Step ${iter}</span>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Left: Chart -->
+                            <div class="chart-wrapper border rounded-lg p-2 bg-white shadow-sm min-h-[400px]">
+                                <div id="${chartId}" style="width:100%; height:100%;"></div>
+                            </div>
+
+                            <!-- Right: Data -->
+                            <div class="space-y-6">
+                                ${!isInit ? `
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-700 uppercase mb-3 border-l-4 border-blue-500 pl-2">1. Tính Khoảng Cách & Gán Nhóm</h4>
+                                        <div class="overflow-x-auto max-h-[300px] border rounded custom-scrollbar">
+                                            <table class="w-full text-sm text-left whitespace-nowrap">
+                                                <thead class="bg-slate-100 text-xs uppercase font-semibold text-slate-600 sticky top-0">
+                                                    <tr>
+                                                        <th class="px-4 py-2">STT</th>
+                                                        <th class="px-4 py-2">Điểm</th>
+                                                        <th class="px-4 py-2 text-red-600">D -> C1</th>
+                                                        <th class="px-4 py-2 text-green-600">D -> C2</th>
+                                                        <th class="px-4 py-2 text-blue-600">D -> C3</th>
+                                                        <th class="px-4 py-2">Nhóm</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-slate-100">${tableRows}</tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-700 uppercase mb-3 border-l-4 border-purple-500 pl-2">2. Cập Nhật Tâm Mới</h4>
+                                        ${calcHtml}
+                                    </div>
+                                ` : `
+                                    <div class="flex flex-col justify-center h-full space-y-4">
+                                        <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                            <p class="font-semibold text-blue-800">Tâm ban đầu được chọn:</p>
+                                            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-700">
+                                                <li><span class="font-bold text-red-600">C1:</span> (${centers[0].x}, ${centers[0].y})</li>
+                                                <li><span class="font-bold text-green-600">C2:</span> (${centers[1].x}, ${centers[1].y})</li>
+                                                <li><span class="font-bold text-blue-600">C3:</span> (${centers[2].x}, ${centers[2].y})</li>
+                                            </ul>
+                                        </div>
+                                        <p class="text-sm text-slate-500 italic text-center">Biểu đồ bên trái hiển thị vị trí các điểm dữ liệu và 3 tâm khởi tạo.</p>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('resultArea').innerHTML += html;
+
+            // Draw Chart
+            setTimeout(() => {
+                drawPlotlyChart(chartId, points, centers, assignments, isInit, oldCenters);
+            }, 50);
+        }
+
+        function drawPlotlyChart(divId, points, centers, assignments, isInit, oldCenters) {
+            let traces = [];
+            const colors = ['#ef4444', '#22c55e', '#3b82f6']; // Tailwind Red-500, Green-500, Blue-500
+            
+            // 1. Vẽ các điểm dữ liệu
+            if (isInit) {
+                traces.push({
+                    x: points.map(p => p.x), y: points.map(p => p.y),
+                    mode: 'markers+text', type: 'scatter',
+                    text: points.map(p => p.id), textposition: 'top center',
+                    marker: { size: 10, color: '#94a3b8' }, // Slate-400
+                    name: 'Điểm dữ liệu'
+                });
+            } else {
+                for(let c=0; c<3; c++) {
+                    let clusterPoints = points.filter((p, i) => assignments[i] === c);
+                    traces.push({
+                        x: clusterPoints.map(p => p.x), y: clusterPoints.map(p => p.y),
+                        mode: 'markers+text', type: 'scatter',
+                        text: clusterPoints.map(p => p.id), textposition: 'top center',
+                        marker: { size: 10, color: colors[c], opacity: 0.7 },
+                        name: `Cụm ${c+1}`
+                    });
+                }
+            }
+
+            // 2. Vẽ Tâm Cũ (Mờ đi) để thấy hướng di chuyển
+            if (oldCenters) {
+                traces.push({
+                    x: oldCenters.map(c => c.x), y: oldCenters.map(c => c.y),
+                    mode: 'markers', type: 'scatter',
+                    marker: { size: 12, symbol: 'x', color: colors, opacity: 0.4 },
+                    name: 'Tâm Cũ', hoverinfo: 'none'
+                });
+            }
+
+            // 3. Vẽ Tâm Hiện Tại (Ngôi sao lớn)
+            traces.push({
+                x: centers.map(c => c.x), y: centers.map(c => c.y),
+                mode: 'markers', type: 'scatter',
+                marker: { 
+                    size: 18, symbol: 'star', 
+                    color: colors, 
+                    line: {width: 2, color: 'black'} 
+                },
+                name: isInit ? 'Tâm Gốc' : 'Tâm Mới'
+            });
+
+            // Layout đẹp
+            let layout = {
+                margin: {t: 30, b: 40, l: 40, r: 20},
+                xaxis: { title: 'X1', showgrid: true, gridcolor: '#e2e8f0' },
+                yaxis: { title: 'X2', showgrid: true, gridcolor: '#e2e8f0' },
+                paper_bgcolor: 'white', plot_bgcolor: 'white',
+                legend: { orientation: 'h', y: -0.2 },
+                hovermode: 'closest',
+                height: 400
+            };
+            
+            // Cấu hình responsive
+            let config = { responsive: true, displayModeBar: false };
+
+            Plotly.newPlot(divId, traces, layout, config);
+        }
+
     </script>
 </body>
 </html>
